@@ -1,0 +1,94 @@
+# ===== C++ =====
+# Скомпилированные объектные файлы
+*.o
+*.obj
+*.lo
+*.slo
+
+# Скомпилированные динамические/статические библиотеки
+*.so
+*.so.*
+*.dylib
+*.dll
+*.a
+*.lib
+
+# Исполняемые файлы
+*.exe
+*.out
+*.app
+app
+a.out
+
+# Файлы отладки
+*.pdb
+*.ilk
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+Makefile
+build/
+cmake-build-*/
+
+# ===== Java =====
+# Скомпилированные классы
+*.class
+
+# Логи
+*.log
+
+# Файлы упаковки
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# ===== IDE =====
+# Visual Studio Code
+.vscode/
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# CLion / IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Eclipse
+.settings/
+.classpath
+.project
+bin/
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
