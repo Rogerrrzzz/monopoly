@@ -14,6 +14,7 @@
 *.lib
 
 # Исполняемые файлы
+monopoly/
 *.exe
 *.out
 *.app
@@ -75,6 +76,9 @@ build/
 *.user
 *.userosscache
 *.sln.docstates
+*.sln
+*.vcxproj
+*.vcxproj.filters
 
 # CLion / IntelliJ IDEA
 .idea/
