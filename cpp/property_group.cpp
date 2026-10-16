@@ -1,4 +1,4 @@
-#include "property_group.hpp"
+п»ї#include "property_group.hpp"
 
 #include <iostream>
 
@@ -9,16 +9,16 @@ namespace monopoly
         : m_name{ name }
         , m_capacity{ capacity }
     {
-        // Память выделяется один раз, чтобы вектор не перемещал участки
-        // (иначе указатели игроков на участки станут недействительными)
+        // РџР°РјСЏС‚СЊ РІС‹РґРµР»СЏРµС‚СЃСЏ РѕРґРёРЅ СЂР°Р·, С‡С‚РѕР±С‹ РІРµРєС‚РѕСЂ РЅРµ РїРµСЂРµРјРµС‰Р°Р» СѓС‡Р°СЃС‚РєРё
+        // (РёРЅР°С‡Рµ СѓРєР°Р·Р°С‚РµР»Рё РёРіСЂРѕРєРѕРІ РЅР° СѓС‡Р°СЃС‚РєРё СЃС‚Р°РЅСѓС‚ РЅРµРґРµР№СЃС‚РІРёС‚РµР»СЊРЅС‹РјРё)
         m_properties.reserve(m_capacity);
 
-        std::cout << "[PropertyGroup] Создана группа \"" << m_name << "\", вместимость " << m_capacity << std::endl;
+        std::cout << "[PropertyGroup] РЎРѕР·РґР°РЅР° РіСЂСѓРїРїР° \"" << m_name << "\", РІРјРµСЃС‚РёРјРѕСЃС‚СЊ " << m_capacity << std::endl;
     }
 
     PropertyGroup::~PropertyGroup()
     {
-        std::cout << "[PropertyGroup] Уничтожается группа \"" << m_name << "\" (участков: " << m_properties.size() << ")"
+        std::cout << "[PropertyGroup] РЈРЅРёС‡С‚РѕР¶Р°РµС‚СЃСЏ РіСЂСѓРїРїР° \"" << m_name << "\" (СѓС‡Р°СЃС‚РєРѕРІ: " << m_properties.size() << ")"
             << std::endl;
     }
 
@@ -26,7 +26,7 @@ namespace monopoly
     {
         if (m_properties.size() >= m_capacity)
         {
-            std::cout << "[Отказ] Группа \"" << m_name << "\" уже заполнена, участок \"" << name << "\" не добавлен"
+            std::cout << "[РћС‚РєР°Р·] Р“СЂСѓРїРїР° \"" << m_name << "\" СѓР¶Рµ Р·Р°РїРѕР»РЅРµРЅР°, СѓС‡Р°СЃС‚РѕРє \"" << name << "\" РЅРµ РґРѕР±Р°РІР»РµРЅ"
                 << std::endl;
             return false;
         }
@@ -39,7 +39,7 @@ namespace monopoly
     {
         if (index >= m_properties.size())
         {
-            std::cout << "[Отказ] В группе \"" << m_name << "\" нет участка с номером " << index << std::endl;
+            std::cout << "[РћС‚РєР°Р·] Р’ РіСЂСѓРїРїРµ \"" << m_name << "\" РЅРµС‚ СѓС‡Р°СЃС‚РєР° СЃ РЅРѕРјРµСЂРѕРј " << index << std::endl;
             return nullptr;
         }
         return &m_properties[index];
@@ -49,7 +49,7 @@ namespace monopoly
     {
         if (index >= m_properties.size())
         {
-            std::cout << "[Отказ] В группе \"" << m_name << "\" нет участка с номером " << index << std::endl;
+            std::cout << "[РћС‚РєР°Р·] Р’ РіСЂСѓРїРїРµ \"" << m_name << "\" РЅРµС‚ СѓС‡Р°СЃС‚РєР° СЃ РЅРѕРјРµСЂРѕРј " << index << std::endl;
             return nullptr;
         }
         return &m_properties[index];
@@ -82,15 +82,15 @@ namespace monopoly
 
         if (property->GetOwnerId() != playerId)
         {
-            std::cout << "[Отказ] Участок \"" << property->GetName() << "\" не принадлежит игроку " << playerId
+            std::cout << "[РћС‚РєР°Р·] РЈС‡Р°СЃС‚РѕРє \"" << property->GetName() << "\" РЅРµ РїСЂРёРЅР°РґР»РµР¶РёС‚ РёРіСЂРѕРєСѓ " << playerId
                 << std::endl;
             return false;
         }
 
         if (!IsFullyOwnedBy(playerId))
         {
-            std::cout << "[Отказ] Игрок " << playerId << " не владеет всей группой \"" << m_name
-                << "\", застройка запрещена" << std::endl;
+            std::cout << "[РћС‚РєР°Р·] РРіСЂРѕРє " << playerId << " РЅРµ РІР»Р°РґРµРµС‚ РІСЃРµР№ РіСЂСѓРїРїРѕР№ \"" << m_name
+                << "\", Р·Р°СЃС‚СЂРѕР№РєР° Р·Р°РїСЂРµС‰РµРЅР°" << std::endl;
             return false;
         }
 
@@ -99,7 +99,7 @@ namespace monopoly
 
     void PropertyGroup::PrintInfo() const
     {
-        std::cout << "Группа \"" << m_name << "\" (" << m_properties.size() << "/" << m_capacity << "):" << std::endl;
+        std::cout << "Р“СЂСѓРїРїР° \"" << m_name << "\" (" << m_properties.size() << "/" << m_capacity << "):" << std::endl;
 
         for (const auto& property : m_properties)
         {

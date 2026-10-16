@@ -1,4 +1,4 @@
-#include "player.hpp"
+п»ї#include "player.hpp"
 
 #include <iostream>
 
@@ -10,13 +10,13 @@ namespace monopoly
         , m_name{ name }
         , m_balance{ balance }
     {
-        std::cout << "[Player] Создан игрок \"" << m_name << "\" (id " << m_id << "), баланс " << m_balance << std::endl;
+        std::cout << "[Player] РЎРѕР·РґР°РЅ РёРіСЂРѕРє \"" << m_name << "\" (id " << m_id << "), Р±Р°Р»Р°РЅСЃ " << m_balance << std::endl;
     }
 
     Player::~Player()
     {
-        // Участки здесь НЕ уничтожаются: игрок лишь хранит на них указатели
-        std::cout << "[Player] Уничтожается игрок \"" << m_name << "\" (указателей на участки: " << m_properties.size()
+        // РЈС‡Р°СЃС‚РєРё Р·РґРµСЃСЊ РќР• СѓРЅРёС‡С‚РѕР¶Р°СЋС‚СЃСЏ: РёРіСЂРѕРє Р»РёС€СЊ С…СЂР°РЅРёС‚ РЅР° РЅРёС… СѓРєР°Р·Р°С‚РµР»Рё
+        std::cout << "[Player] РЈРЅРёС‡С‚РѕР¶Р°РµС‚СЃСЏ РёРіСЂРѕРє \"" << m_name << "\" (СѓРєР°Р·Р°С‚РµР»РµР№ РЅР° СѓС‡Р°СЃС‚РєРё: " << m_properties.size()
             << ")" << std::endl;
     }
 
@@ -24,13 +24,13 @@ namespace monopoly
     {
         if (amount < 0)
         {
-            std::cout << "[Отказ] Нельзя заплатить отрицательную сумму" << std::endl;
+            std::cout << "[РћС‚РєР°Р·] РќРµР»СЊР·СЏ Р·Р°РїР»Р°С‚РёС‚СЊ РѕС‚СЂРёС†Р°С‚РµР»СЊРЅСѓСЋ СЃСѓРјРјСѓ" << std::endl;
             return false;
         }
 
         if (amount > m_balance)
         {
-            std::cout << "[Отказ] У игрока \"" << m_name << "\" недостаточно денег: нужно " << amount << ", есть "
+            std::cout << "[РћС‚РєР°Р·] РЈ РёРіСЂРѕРєР° \"" << m_name << "\" РЅРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ РґРµРЅРµРі: РЅСѓР¶РЅРѕ " << amount << ", РµСЃС‚СЊ "
                 << m_balance << std::endl;
             return false;
         }
@@ -43,7 +43,7 @@ namespace monopoly
     {
         if (amount < 0)
         {
-            std::cout << "[Отказ] Нельзя получить отрицательную сумму" << std::endl;
+            std::cout << "[РћС‚РєР°Р·] РќРµР»СЊР·СЏ РїРѕР»СѓС‡РёС‚СЊ РѕС‚СЂРёС†Р°С‚РµР»СЊРЅСѓСЋ СЃСѓРјРјСѓ" << std::endl;
             return false;
         }
 
@@ -55,7 +55,7 @@ namespace monopoly
     {
         if (property.IsOwned())
         {
-            std::cout << "[Отказ] Участок \"" << property.GetName() << "\" уже принадлежит игроку "
+            std::cout << "[РћС‚РєР°Р·] РЈС‡Р°СЃС‚РѕРє \"" << property.GetName() << "\" СѓР¶Рµ РїСЂРёРЅР°РґР»РµР¶РёС‚ РёРіСЂРѕРєСѓ "
                 << property.GetOwnerId() << std::endl;
             return false;
         }
@@ -68,7 +68,7 @@ namespace monopoly
         property.AssignOwner(m_id);
         m_properties.push_back(&property);
 
-        std::cout << "Игрок \"" << m_name << "\" купил участок \"" << property.GetName() << "\" за " << property.GetPrice()
+        std::cout << "РРіСЂРѕРє \"" << m_name << "\" РєСѓРїРёР» СѓС‡Р°СЃС‚РѕРє \"" << property.GetName() << "\" Р·Р° " << property.GetPrice()
             << std::endl;
         return true;
     }
@@ -77,7 +77,7 @@ namespace monopoly
     {
         if (property == nullptr)
         {
-            std::cout << "[Отказ] Участок не указан (пустой указатель)" << std::endl;
+            std::cout << "[РћС‚РєР°Р·] РЈС‡Р°СЃС‚РѕРє РЅРµ СѓРєР°Р·Р°РЅ (РїСѓСЃС‚РѕР№ СѓРєР°Р·Р°С‚РµР»СЊ)" << std::endl;
             return false;
         }
         return BuyProperty(*property);
@@ -87,7 +87,7 @@ namespace monopoly
     {
         if (property.GetOwnerId() != m_id)
         {
-            std::cout << "[Отказ] Участок \"" << property.GetName() << "\" не принадлежит игроку \"" << m_name << "\""
+            std::cout << "[РћС‚РєР°Р·] РЈС‡Р°СЃС‚РѕРє \"" << property.GetName() << "\" РЅРµ РїСЂРёРЅР°РґР»РµР¶РёС‚ РёРіСЂРѕРєСѓ \"" << m_name << "\""
                 << std::endl;
             return false;
         }
@@ -99,7 +99,7 @@ namespace monopoly
 
         Receive(property.GetMortgageValue());
 
-        std::cout << "Игрок \"" << m_name << "\" заложил участок \"" << property.GetName() << "\", получено "
+        std::cout << "РРіСЂРѕРє \"" << m_name << "\" Р·Р°Р»РѕР¶РёР» СѓС‡Р°СЃС‚РѕРє \"" << property.GetName() << "\", РїРѕР»СѓС‡РµРЅРѕ "
             << property.GetMortgageValue() << std::endl;
         return true;
     }
@@ -115,8 +115,8 @@ namespace monopoly
         const int cost = property->GetBuildCost();
         if (m_balance < cost)
         {
-            std::cout << "[Отказ] У игрока \"" << m_name << "\" не хватает денег на постройку: нужно " << cost
-                << ", есть " << m_balance << std::endl;
+            std::cout << "[РћС‚РєР°Р·] РЈ РёРіСЂРѕРєР° \"" << m_name << "\" РЅРµ С…РІР°С‚Р°РµС‚ РґРµРЅРµРі РЅР° РїРѕСЃС‚СЂРѕР№РєСѓ: РЅСѓР¶РЅРѕ " << cost
+                << ", РµСЃС‚СЊ " << m_balance << std::endl;
             return false;
         }
 
@@ -127,7 +127,7 @@ namespace monopoly
 
         Pay(cost);
 
-        std::cout << "Игрок \"" << m_name << "\" построил на участке \"" << property->GetName() << "\" за " << cost
+        std::cout << "РРіСЂРѕРє \"" << m_name << "\" РїРѕСЃС‚СЂРѕРёР» РЅР° СѓС‡Р°СЃС‚РєРµ \"" << property->GetName() << "\" Р·Р° " << cost
             << std::endl;
         return true;
     }
@@ -136,7 +136,7 @@ namespace monopoly
     {
         if (property.GetOwnerId() != m_id)
         {
-            std::cout << "[Отказ] Участок \"" << property.GetName() << "\" не принадлежит игроку \"" << m_name << "\""
+            std::cout << "[РћС‚РєР°Р·] РЈС‡Р°СЃС‚РѕРє \"" << property.GetName() << "\" РЅРµ РїСЂРёРЅР°РґР»РµР¶РёС‚ РёРіСЂРѕРєСѓ \"" << m_name << "\""
                 << std::endl;
             return false;
         }
@@ -148,20 +148,20 @@ namespace monopoly
 
         Receive(property.GetBuildRefund());
 
-        std::cout << "Игрок \"" << m_name << "\" продал постройку на участке \"" << property.GetName() << "\", получено "
+        std::cout << "РРіСЂРѕРє \"" << m_name << "\" РїСЂРѕРґР°Р» РїРѕСЃС‚СЂРѕР№РєСѓ РЅР° СѓС‡Р°СЃС‚РєРµ \"" << property.GetName() << "\", РїРѕР»СѓС‡РµРЅРѕ "
             << property.GetBuildRefund() << std::endl;
         return true;
     }
 
     void Player::PrintInfo() const
     {
-        std::cout << "Игрок \"" << m_name << "\" (id " << m_id << "): баланс " << m_balance << ", участков "
+        std::cout << "РРіСЂРѕРє \"" << m_name << "\" (id " << m_id << "): Р±Р°Р»Р°РЅСЃ " << m_balance << ", СѓС‡Р°СЃС‚РєРѕРІ "
             << m_properties.size() << std::endl;
 
         for (const Property* property : m_properties)
         {
-            std::cout << "  - " << property->GetName() << ", уровень застройки " << property->GetBuildLevel()
-                << (property->IsMortgaged() ? ", в залоге" : "") << std::endl;
+            std::cout << "  - " << property->GetName() << ", СѓСЂРѕРІРµРЅСЊ Р·Р°СЃС‚СЂРѕР№РєРё " << property->GetBuildLevel()
+                << (property->IsMortgaged() ? ", РІ Р·Р°Р»РѕРіРµ" : "") << std::endl;
         }
     }
 

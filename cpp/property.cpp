@@ -1,4 +1,4 @@
-#include "property.hpp"
+п»ї#include "property.hpp"
 
 #include <array>
 #include <iostream>
@@ -9,7 +9,7 @@ namespace monopoly
     namespace
     {
 
-        // Множитель аренды для каждого уровня застройки (индекс - уровень)
+        // РњРЅРѕР¶РёС‚РµР»СЊ Р°СЂРµРЅРґС‹ РґР»СЏ РєР°Р¶РґРѕРіРѕ СѓСЂРѕРІРЅСЏ Р·Р°СЃС‚СЂРѕР№РєРё (РёРЅРґРµРєСЃ - СѓСЂРѕРІРµРЅСЊ)
         constexpr std::array<int, Property::MAX_BUILD_LEVEL + 1> RENT_MULTIPLIERS{ 1, 2, 3, 5, 8 };
 
     } // namespace
@@ -19,12 +19,12 @@ namespace monopoly
         , m_price{ price }
         , m_baseRent{ baseRent }
     {
-        std::cout << "[Property] Создан участок \"" << m_name << "\", цена " << m_price << std::endl;
+        std::cout << "[Property] РЎРѕР·РґР°РЅ СѓС‡Р°СЃС‚РѕРє \"" << m_name << "\", С†РµРЅР° " << m_price << std::endl;
     }
 
     Property::~Property()
     {
-        std::cout << "[Property] Уничтожается участок \"" << m_name << "\"" << std::endl;
+        std::cout << "[Property] РЈРЅРёС‡С‚РѕР¶Р°РµС‚СЃСЏ СѓС‡Р°СЃС‚РѕРє \"" << m_name << "\"" << std::endl;
     }
 
     int Property::CalcRent() const
@@ -40,7 +40,7 @@ namespace monopoly
     {
         if (IsOwned())
         {
-            std::cout << "[Отказ] Участок \"" << m_name << "\" уже принадлежит игроку " << m_ownerId << std::endl;
+            std::cout << "[РћС‚РєР°Р·] РЈС‡Р°СЃС‚РѕРє \"" << m_name << "\" СѓР¶Рµ РїСЂРёРЅР°РґР»РµР¶РёС‚ РёРіСЂРѕРєСѓ " << m_ownerId << std::endl;
             return false;
         }
 
@@ -52,13 +52,13 @@ namespace monopoly
     {
         if (m_isMortgaged)
         {
-            std::cout << "[Отказ] Нельзя строить на заложенном участке \"" << m_name << "\"" << std::endl;
+            std::cout << "[РћС‚РєР°Р·] РќРµР»СЊР·СЏ СЃС‚СЂРѕРёС‚СЊ РЅР° Р·Р°Р»РѕР¶РµРЅРЅРѕРј СѓС‡Р°СЃС‚РєРµ \"" << m_name << "\"" << std::endl;
             return false;
         }
 
         if (m_buildLevel >= MAX_BUILD_LEVEL)
         {
-            std::cout << "[Отказ] На участке \"" << m_name << "\" уже максимальный уровень застройки" << std::endl;
+            std::cout << "[РћС‚РєР°Р·] РќР° СѓС‡Р°СЃС‚РєРµ \"" << m_name << "\" СѓР¶Рµ РјР°РєСЃРёРјР°Р»СЊРЅС‹Р№ СѓСЂРѕРІРµРЅСЊ Р·Р°СЃС‚СЂРѕР№РєРё" << std::endl;
             return false;
         }
 
@@ -70,7 +70,7 @@ namespace monopoly
     {
         if (m_buildLevel == 0)
         {
-            std::cout << "[Отказ] На участке \"" << m_name << "\" нет построек" << std::endl;
+            std::cout << "[РћС‚РєР°Р·] РќР° СѓС‡Р°СЃС‚РєРµ \"" << m_name << "\" РЅРµС‚ РїРѕСЃС‚СЂРѕРµРє" << std::endl;
             return false;
         }
 
@@ -82,13 +82,13 @@ namespace monopoly
     {
         if (m_buildLevel > 0)
         {
-            std::cout << "[Отказ] Нельзя заложить участок \"" << m_name << "\", пока на нём есть постройки" << std::endl;
+            std::cout << "[РћС‚РєР°Р·] РќРµР»СЊР·СЏ Р·Р°Р»РѕР¶РёС‚СЊ СѓС‡Р°СЃС‚РѕРє \"" << m_name << "\", РїРѕРєР° РЅР° РЅС‘Рј РµСЃС‚СЊ РїРѕСЃС‚СЂРѕР№РєРё" << std::endl;
             return false;
         }
 
         if (m_isMortgaged)
         {
-            std::cout << "[Отказ] Участок \"" << m_name << "\" уже заложен" << std::endl;
+            std::cout << "[РћС‚РєР°Р·] РЈС‡Р°СЃС‚РѕРє \"" << m_name << "\" СѓР¶Рµ Р·Р°Р»РѕР¶РµРЅ" << std::endl;
             return false;
         }
 
@@ -100,7 +100,7 @@ namespace monopoly
     {
         if (!m_isMortgaged)
         {
-            std::cout << "[Отказ] Участок \"" << m_name << "\" не находится в залоге" << std::endl;
+            std::cout << "[РћС‚РєР°Р·] РЈС‡Р°СЃС‚РѕРє \"" << m_name << "\" РЅРµ РЅР°С…РѕРґРёС‚СЃСЏ РІ Р·Р°Р»РѕРіРµ" << std::endl;
             return false;
         }
 
@@ -117,22 +117,22 @@ namespace monopoly
 
     void Property::PrintInfo() const
     {
-        std::cout << "Участок \"" << m_name << "\": цена " << m_price << ", ";
+        std::cout << "РЈС‡Р°СЃС‚РѕРє \"" << m_name << "\": С†РµРЅР° " << m_price << ", ";
 
         if (IsOwned())
         {
-            std::cout << "владелец - игрок " << m_ownerId;
+            std::cout << "РІР»Р°РґРµР»РµС† - РёРіСЂРѕРє " << m_ownerId;
         }
         else
         {
-            std::cout << "владелец - банк";
+            std::cout << "РІР»Р°РґРµР»РµС† - Р±Р°РЅРє";
         }
 
-        std::cout << ", уровень застройки " << m_buildLevel << ", аренда " << CalcRent();
+        std::cout << ", СѓСЂРѕРІРµРЅСЊ Р·Р°СЃС‚СЂРѕР№РєРё " << m_buildLevel << ", Р°СЂРµРЅРґР° " << CalcRent();
 
         if (m_isMortgaged)
         {
-            std::cout << ", в залоге";
+            std::cout << ", РІ Р·Р°Р»РѕРіРµ";
         }
         std::cout << std::endl;
     }
