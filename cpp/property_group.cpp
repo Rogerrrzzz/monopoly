@@ -1,5 +1,7 @@
 ﻿#include "property_group.hpp"
 
+#include "player.hpp"
+
 #include <iostream>
 
 namespace monopoly
@@ -9,8 +11,7 @@ namespace monopoly
         : m_name{ name }
         , m_capacity{ capacity }
     {
-        // Память выделяется один раз, чтобы вектор не перемещал участки
-        // (иначе указатели игроков на участки станут недействительными)
+        // Сразу резервируем место для всех частей группы.
         m_properties.reserve(m_capacity);
 
         std::cout << "[PropertyGroup] Создана группа \"" << m_name << "\", вместимость " << m_capacity << std::endl;
@@ -35,24 +36,49 @@ namespace monopoly
         return true;
     }
 
-    Property* PropertyGroup::GetProperty(std::size_t index)
+    bool PropertyGroup::HasProperty(std::size_t index) const
     {
         if (index >= m_properties.size())
         {
             std::cout << "[Отказ] В группе \"" << m_name << "\" нет участка с номером " << index << std::endl;
-            return nullptr;
+            return false;
         }
-        return &m_properties[index];
+        return true;
     }
 
-    const Property* PropertyGroup::GetProperty(std::size_t index) const
+    bool PropertyGroup::BuyProperty(std::size_t index, Player& player)
     {
-        if (index >= m_properties.size())
+        if (!HasProperty(index))
         {
-            std::cout << "[Отказ] В группе \"" << m_name << "\" нет участка с номером " << index << std::endl;
-            return nullptr;
+            return false;
         }
-        return &m_properties[index];
+        if (m_properties[index].IsOwned())
+        {
+            std::cout << "[Отказ] Участок \"" << m_properties[index].GetName() << "\" уже принадлежит игроку "
+                << m_properties[index].GetOwnerId() << std::endl;
+            return false;
+        }
+        if (!player.Pay(m_properties[index].GetPrice()))
+        {
+            return false;
+        }
+        m_properties[index].AssignOwner(player.GetId());
+        std::cout << "Игрок \"" << player.GetName() << "\" купил участок \"" << m_properties[index].GetName()
+            << "\" за " << m_properties[index].GetPrice() << std::endl;
+        return true;
+    }
+
+    std::size_t PropertyGroup::GetOwnedPropertyCount(int playerId) const
+    {
+        std::size_t count = 0;
+        for (std::size_t i = 0; i < m_properties.size(); ++i)
+        {
+            if (m_properties[i].IsOwned() && m_properties[i].GetOwnerId() == playerId)
+            {
+                ++count;
+            }
+        }
+        return count;
     }
 
     bool PropertyGroup::IsFullyOwnedBy(int playerId) const
@@ -62,49 +88,86 @@ namespace monopoly
             return false;
         }
 
-        for (const auto& property : m_properties)
-        {
-            if (property.GetOwnerId() != playerId)
-            {
-                return false;
-            }
-        }
-        return true;
+        return GetOwnedPropertyCount(playerId) == m_capacity;
     }
 
-    bool PropertyGroup::BuildOn(std::size_t index, int playerId)
+    bool PropertyGroup::BuildOn(std::size_t index, Player& player)
     {
-        Property* property = GetProperty(index);
-        if (property == nullptr)
+        if (!HasProperty(index))
         {
             return false;
         }
 
-        if (property->GetOwnerId() != playerId)
+        const int cost = m_properties[index].GetBuildCost();
+        if (player.GetBalance() < cost)
         {
-            std::cout << "[Отказ] Участок \"" << property->GetName() << "\" не принадлежит игроку " << playerId
+            std::cout << "[Отказ] У игрока \"" << player.GetName() << "\" не хватает денег на постройку: нужно " << cost
+                << ", есть " << player.GetBalance() << std::endl;
+            return false;
+        }
+
+        if (m_properties[index].GetOwnerId() != player.GetId())
+        {
+            std::cout << "[Отказ] Участок \"" << m_properties[index].GetName() << "\" не принадлежит игроку " << player.GetId()
                 << std::endl;
             return false;
         }
 
-        if (!IsFullyOwnedBy(playerId))
+        if (!IsFullyOwnedBy(player.GetId()))
         {
-            std::cout << "[Отказ] Игрок " << playerId << " не владеет всей группой \"" << m_name
+            std::cout << "[Отказ] Игрок " << player.GetId() << " не владеет всей группой \"" << m_name
                 << "\", застройка запрещена" << std::endl;
             return false;
         }
 
-        return property->Build();
+        if (!m_properties[index].Build())
+        {
+            return false;
+        }
+        player.Pay(cost);
+        std::cout << "Игрок \"" << player.GetName() << "\" построил на участке \"" << m_properties[index].GetName()
+            << "\" за " << cost << std::endl;
+        return true;
+    }
+
+    bool PropertyGroup::MortgageProperty(std::size_t index, Player& player)
+    {
+        if (!HasProperty(index))
+        {
+            return false;
+        }
+        return player.MortgageProperty(m_properties[index]);
+    }
+
+    bool PropertyGroup::SellBuildingOnProperty(std::size_t index, Player& player)
+    {
+        if (!HasProperty(index))
+        {
+            return false;
+        }
+        return player.SellBuildingOnProperty(m_properties[index]);
     }
 
     void PropertyGroup::PrintInfo() const
     {
         std::cout << "Группа \"" << m_name << "\" (" << m_properties.size() << "/" << m_capacity << "):" << std::endl;
 
-        for (const auto& property : m_properties)
+        for (std::size_t i = 0; i < m_properties.size(); ++i)
         {
             std::cout << "  ";
-            property.PrintInfo();
+            m_properties[i].PrintInfo();
+        }
+    }
+
+    void PropertyGroup::PrintOwnedProperties(int playerId) const
+    {
+        for (std::size_t i = 0; i < m_properties.size(); ++i)
+        {
+            if (m_properties[i].IsOwned() && m_properties[i].GetOwnerId() == playerId)
+            {
+                std::cout << "  - ";
+                m_properties[i].PrintInfo();
+            }
         }
     }
 

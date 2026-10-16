@@ -10,6 +10,8 @@
 namespace monopoly
 {
 
+    class Player;
+
     // Монополия: группа участков одной категории.
     // Композиция: участки хранятся по значению, создаются и уничтожаются вместе с группой
     class PropertyGroup
@@ -22,11 +24,10 @@ namespace monopoly
         std::size_t m_capacity{ 0 };
 
     public:
-        PropertyGroup() = default;
         PropertyGroup(std::string_view name, std::size_t capacity);
         ~PropertyGroup();
 
-        // Участки хранятся по значению, а игроки держат на них указатели: копировать группу нельзя
+        // Группа имеет собственные части и не копируется.
         PropertyGroup(const PropertyGroup&) = delete;
         PropertyGroup& operator=(const PropertyGroup&) = delete;
 
@@ -48,18 +49,25 @@ namespace monopoly
         // Участок создаётся прямо внутри группы; false - если группа уже заполнена
         bool AddProperty(std::string_view name, int price, int baseRent);
 
-        // Доступ к части через целое; nullptr, если индекс неверный
-        [[nodiscard]] Property* GetProperty(std::size_t index);
-        [[nodiscard]] const Property* GetProperty(std::size_t index) const;
+        // Операции с частями выполняются через целое; ссылки на части наружу не выдаются.
+        bool BuyProperty(std::size_t index, Player& player);
+        bool MortgageProperty(std::size_t index, Player& player);
+        bool SellBuildingOnProperty(std::size_t index, Player& player);
+
+        [[nodiscard]] std::size_t GetOwnedPropertyCount(int playerId) const;
 
         // Группа укомплектована, и все её участки принадлежат одному игроку (игрок собрал монополию)
         [[nodiscard]] bool IsFullyOwnedBy(int playerId) const;
 
-        // Застройка участка с проверкой правил; деньги списывает Player
-        bool BuildOn(std::size_t index, int playerId);
+        // Группа проверяет правила участка, Player выполняет денежные операции.
+        bool BuildOn(std::size_t index, Player& player);
 
         // Вывод состояния группы и всех её участков в консоль
         void PrintInfo() const;
+        void PrintOwnedProperties(int playerId) const;
+
+    private:
+        [[nodiscard]] bool HasProperty(std::size_t index) const;
     };
 
 } // namespace monopoly
