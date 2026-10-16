@@ -24,7 +24,6 @@ namespace monopoly
         bool m_isMortgaged{ false };
 
     public:
-        Property() = default;
         Property(std::string_view name, int price, int baseRent);
         ~Property();
 
