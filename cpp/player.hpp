@@ -4,6 +4,7 @@
 #include "property_group.hpp"
 
 #include <cstddef>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -12,8 +13,7 @@ namespace monopoly
 {
 
     // Игрок: личный баланс и список купленных участков.
-    // Агрегация: участки создаются вне игрока, он хранит только указатели на них
-    // и не уничтожает участки при собственном уничтожении
+    // Агрегация: weak_ptr наблюдает за созданными снаружи участками и группами.
     class Player
     {
     private:
@@ -22,7 +22,8 @@ namespace monopoly
         int m_id{ 0 }; // идентификаторы игроков начинаются с 1, 0 - "не задан"
         std::string m_name{ BASE_NAME };
         int m_balance{ 0 };
-        std::vector<Property*> m_properties{};
+        std::vector<std::weak_ptr<Property>> m_properties{};
+        std::vector<std::weak_ptr<PropertyGroup>> m_propertyGroups{};
 
     public:
         Player() = default;
@@ -44,10 +45,7 @@ namespace monopoly
             return m_balance;
         }
 
-        [[nodiscard]] std::size_t GetPropertyCount() const
-        {
-            return m_properties.size();
-        }
+        [[nodiscard]] std::size_t GetPropertyCount() const;
 
         void SetId(int id)
         {
@@ -63,18 +61,20 @@ namespace monopoly
         bool Pay(int amount);
         bool Receive(int amount);
 
-        // Покупка участка у банка (перегрузки: по ссылке и по указателю)
-        bool BuyProperty(Property& property);
-        bool BuyProperty(Property* property);
+        // Игрок сохраняет слабую ссылку, не становясь владельцем объекта в памяти.
+        bool BuyProperty(const std::shared_ptr<Property>& property);
+        bool BuyProperty(const std::shared_ptr<PropertyGroup>& group, std::size_t index);
 
         // Залог своего участка в обмен на деньги от банка
         bool MortgageProperty(Property& property);
+        bool MortgageProperty(PropertyGroup& group, std::size_t index);
 
         // Застройка участка группы за деньги игрока
         bool BuildOnProperty(PropertyGroup& group, std::size_t index);
 
         // Продажа постройки банку за часть её стоимости
         bool SellBuildingOnProperty(Property& property);
+        bool SellBuildingOnProperty(PropertyGroup& group, std::size_t index);
 
         // Вывод состояния игрока в консоль
         void PrintInfo() const;
