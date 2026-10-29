@@ -52,6 +52,11 @@ namespace monopoly
         {
             return false;
         }
+        if (player.GetId() <= 0)
+        {
+            std::cout << "[Отказ] Перед покупкой задайте положительный id игрока" << std::endl;
+            return false;
+        }
         if (m_properties[index].IsOwned())
         {
             std::cout << "[Отказ] Участок \"" << m_properties[index].GetName() << "\" уже принадлежит игроку "

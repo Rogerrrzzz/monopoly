@@ -22,11 +22,10 @@ namespace monopoly
         int m_id{ 0 }; // идентификаторы игроков начинаются с 1, 0 - "не задан"
         std::string m_name{ BASE_NAME };
         int m_balance{ 0 };
-        std::vector<std::weak_ptr<Property>> m_properties{};
+        std::vector<std::weak_ptr<BaseProperty>> m_properties{};
         std::vector<std::weak_ptr<PropertyGroup>> m_propertyGroups{};
 
     public:
-        Player() = default;
         Player(int id, std::string_view name, int balance);
         ~Player();
 
@@ -62,11 +61,11 @@ namespace monopoly
         bool Receive(int amount);
 
         // Игрок сохраняет слабую ссылку, не становясь владельцем объекта в памяти.
-        bool BuyProperty(const std::shared_ptr<Property>& property);
+        bool BuyProperty(const std::shared_ptr<BaseProperty>& property);
         bool BuyProperty(const std::shared_ptr<PropertyGroup>& group, std::size_t index);
 
         // Залог своего участка в обмен на деньги от банка
-        bool MortgageProperty(Property& property);
+        bool MortgageProperty(BaseProperty& property);
         bool MortgageProperty(PropertyGroup& group, std::size_t index);
 
         // Застройка участка группы за деньги игрока
@@ -78,6 +77,7 @@ namespace monopoly
 
         // Вывод состояния игрока в консоль
         void PrintInfo() const;
+        void ReportProperty(const BaseProperty& property) const;
     };
 
 } // namespace monopoly
