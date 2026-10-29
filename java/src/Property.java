@@ -1,94 +1,64 @@
-/** Участок с ценой, владельцем, уровнем застройки и возможным залогом. */
-public class Property {
-    private static final int BANK_OWNER_ID = -1;
+// Участок с возможностью строительства
+public class Property extends BaseProperty {
     private static final int MAX_BUILD_LEVEL = 4;
     private static final int[] RENT_MULTIPLIERS = {1, 2, 3, 5, 8};
 
-    private final String name;
-    private final int price;
-    private final int baseRent;
     private int buildLevel;
-    private int ownerId = BANK_OWNER_ID;
-    private boolean mortgaged;
+
+    public Property() {
+        super();
+        System.out.println("[Property] Конструктор по умолчанию");
+    }
 
     public Property(String name, int price, int baseRent) {
-        if (price < 0 || baseRent < 0) {
-            throw new IllegalArgumentException("Цена и базовая аренда не могут быть отрицательными");
-        }
-        this.name = name;
-        this.price = price;
-        this.baseRent = baseRent;
-        System.out.println("[Property] Создан участок \"" + name + "\", цена " + price);
+        super(name, price, baseRent);
+        System.out.println("[Property] Конструктор с параметрами: " + getName());
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public int getPrice() {
-        return price;
-    }
-
-    public int getBaseRent() {
-        return baseRent;
+    public Property(Property other) {
+        super(other);
+        this.buildLevel = other.buildLevel;
+        System.out.println("[Property] Конструктор копирования: " + getName());
     }
 
     public int getBuildLevel() {
         return buildLevel;
     }
 
-    public int getOwnerId() {
-        return ownerId;
-    }
-
-    public boolean isOwned() {
-        return ownerId != BANK_OWNER_ID;
-    }
-
-    public boolean isMortgaged() {
-        return mortgaged;
-    }
-
     public int getBuildCost() {
-        return price / 2;
+        return getPrice() / 2;
     }
 
     public int getBuildRefund() {
         return getBuildCost() / 2;
     }
 
-    public int getMortgageValue() {
-        return price / 2;
-    }
-
-    public int getRedeemCost() {
-        return (int) (getMortgageValue() * 11L / 10);
-    }
-
+    @Override
     public int calcRent() {
-        return !isOwned() || mortgaged ? 0 : baseRent * RENT_MULTIPLIERS[buildLevel];
+        return !isOwned() || isMortgaged() ? 0 : getBaseRent() * RENT_MULTIPLIERS[buildLevel];
     }
 
-    public boolean assignOwner(int playerId) {
-        if (isOwned()) {
-            System.out.println("[Отказ] Участок \"" + name + "\" уже принадлежит игроку " + ownerId);
-            return false;
-        }
-        if (playerId <= 0) {
-            System.out.println("[Отказ] Идентификатор владельца должен быть положительным");
-            return false;
-        }
-        ownerId = playerId;
-        return true;
+    @Override
+    public String describe() {
+        return "Участок " + super.describe() + ", уровень застройки " + buildLevel;
+    }
+
+    @Override
+    public Property shallowCopy() {
+        Property copy = new Property(getName(), getPrice(), getBaseRent());
+        copySharedStateTo(copy);
+        copy.buildLevel = buildLevel;
+        return copy;
+    }
+
+    @Override
+    public Property deepCopy() {
+        return new Property(this);
     }
 
     public boolean build() {
-        if (mortgaged) {
-            System.out.println("[Отказ] Нельзя строить на заложенном участке \"" + name + "\"");
-            return false;
-        }
-        if (buildLevel >= MAX_BUILD_LEVEL) {
-            System.out.println("[Отказ] На участке \"" + name + "\" уже максимальный уровень застройки");
+        if (isMortgaged() || buildLevel >= MAX_BUILD_LEVEL) {
+            System.out.println("[Отказ] Участок заложен или достигнут предел застройки: " + getName());
             return false;
         }
         buildLevel++;
@@ -97,46 +67,39 @@ public class Property {
 
     public boolean sellBuilding() {
         if (buildLevel == 0) {
-            System.out.println("[Отказ] На участке \"" + name + "\" нет построек");
+            System.out.println("[Отказ] Нет построек: " + getName());
             return false;
         }
         buildLevel--;
         return true;
     }
 
+    @Override
     public boolean mortgage() {
         if (buildLevel > 0) {
-            System.out.println("[Отказ] Нельзя заложить участок \"" + name + "\", пока на нём есть постройки");
+            System.out.println("[Отказ] Нельзя заложить участок с постройкой: " + getName());
             return false;
         }
-        if (mortgaged) {
-            System.out.println("[Отказ] Участок \"" + name + "\" уже заложен");
-            return false;
-        }
-        mortgaged = true;
-        return true;
-    }
-
-    public boolean redeem() {
-        if (!mortgaged) {
-            System.out.println("[Отказ] Участок \"" + name + "\" не находится в залоге");
-            return false;
-        }
-        mortgaged = false;
-        return true;
-    }
-
-    public void returnToBank() {
-        ownerId = BANK_OWNER_ID;
-        buildLevel = 0;
-        mortgaged = false;
+        return super.mortgage();
     }
 
     @Override
-    public String toString() {
-        String owner = isOwned() ? "игрок " + ownerId : "банк";
-        return "Участок \"" + name + "\": цена " + price + ", владелец - " + owner
-                + ", уровень застройки " + buildLevel + ", аренда " + calcRent()
-                + (mortgaged ? ", в залоге" : "");
+    public void returnToBank() {
+        super.returnToBank();
+        buildLevel = 0;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (!super.equals(object)) {
+            return false;
+        }
+        Property other = (Property) object;
+        return buildLevel == other.buildLevel;
+    }
+
+    @Override
+    public int hashCode() {
+        return 31 * super.hashCode() + buildLevel;
     }
 }
