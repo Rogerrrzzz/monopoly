@@ -25,7 +25,7 @@ namespace monopoly
         std::size_t count = 0;
         for (std::size_t i = 0; i < m_properties.size(); ++i)
         {
-            if (std::shared_ptr<Property> property = m_properties[i].lock())
+            if (std::shared_ptr<BaseProperty> property = m_properties[i].lock())
             {
                 if (property->GetOwnerId() == m_id)
                 {
@@ -74,7 +74,7 @@ namespace monopoly
         return true;
     }
 
-    bool Player::BuyProperty(const std::shared_ptr<Property>& property)
+    bool Player::BuyProperty(const std::shared_ptr<BaseProperty>& property)
     {
         if (!property)
         {
@@ -82,6 +82,11 @@ namespace monopoly
             return false;
         }
 
+        if (m_id <= 0)
+        {
+            std::cout << "[Отказ] Перед покупкой задайте положительный id игрока" << std::endl;
+            return false;
+        }
         if (property->IsOwned())
         {
             std::cout << "[Отказ] Участок \"" << property->GetName() << "\" уже принадлежит игроку "
@@ -109,7 +114,7 @@ namespace monopoly
             m_properties.push_back(property);
         }
 
-        std::cout << "Игрок \"" << m_name << "\" купил участок \"" << property->GetName() << "\" за " << property->GetPrice()
+        std::cout << "Игрок \"" << m_name << "\" купил недвижимость \"" << property->GetName() << "\" за " << property->GetPrice()
             << std::endl;
         return true;
     }
@@ -136,7 +141,7 @@ namespace monopoly
         return true;
     }
 
-    bool Player::MortgageProperty(Property& property)
+    bool Player::MortgageProperty(BaseProperty& property)
     {
         if (property.GetOwnerId() != m_id)
         {
@@ -195,12 +200,11 @@ namespace monopoly
 
         for (std::size_t i = 0; i < m_properties.size(); ++i)
         {
-            if (std::shared_ptr<Property> property = m_properties[i].lock())
+            if (std::shared_ptr<BaseProperty> property = m_properties[i].lock())
             {
                 if (property->GetOwnerId() == m_id)
                 {
-                    std::cout << "  - " << property->GetName() << ", уровень застройки " << property->GetBuildLevel()
-                        << (property->IsMortgaged() ? ", в залоге" : "") << std::endl;
+                    std::cout << "  - " << property->Describe() << std::endl;
                 }
             }
             else
@@ -219,6 +223,11 @@ namespace monopoly
                 std::cout << "  - группа и её участки больше не существуют" << std::endl;
             }
         }
+    }
+
+    void Player::ReportProperty(const BaseProperty& property) const
+    {
+        std::cout << "Игрок \"" << m_name << "\" осматривает: " << property.Describe() << std::endl;
     }
 
     bool Player::SellBuildingOnProperty(PropertyGroup& group, std::size_t index)
