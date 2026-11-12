@@ -6,7 +6,7 @@ public class Player {
     private int id;
     private String name;
     private int balance;
-    private final List<Property> properties = new ArrayList<>();
+    private final List<BaseProperty> properties = new ArrayList<>();
     private final List<PropertyGroup> propertyGroups = new ArrayList<>();
 
     public Player(int id, String name, int balance) {
@@ -33,7 +33,7 @@ public class Player {
 
     public int getPropertyCount() {
         int count = 0;
-        for (Property property : properties) {
+        for (BaseProperty property : properties) {
             if (property.getOwnerId() == id) {
                 count++;
             }
@@ -78,7 +78,7 @@ public class Player {
         return true;
     }
 
-    public boolean buyProperty(Property property) {
+    public boolean buyProperty(BaseProperty property) {
         if (property == null) {
             System.out.println("[Отказ] Участок не указан (null)");
             return false;
@@ -96,10 +96,18 @@ public class Player {
             return false;
         }
         property.assignOwner(id);
-        if (!properties.contains(property)) {
+        // Разные объекты с одинаковыми данными всё равно являются разной недвижимостью
+        boolean alreadyStored = false;
+        for (BaseProperty stored : properties) {
+            if (stored == property) {
+                alreadyStored = true;
+                break;
+            }
+        }
+        if (!alreadyStored) {
             properties.add(property);
         }
-        System.out.println("Игрок \"" + name + "\" купил участок \"" + property.getName()
+        System.out.println("Игрок \"" + name + "\" купил недвижимость \"" + property.getName()
                 + "\" за " + property.getPrice());
         return true;
     }
@@ -115,7 +123,7 @@ public class Player {
         return true;
     }
 
-    public boolean mortgageProperty(Property property) {
+    public boolean mortgageProperty(BaseProperty property) {
         if (property.getOwnerId() != id) {
             System.out.println("[Отказ] Участок \"" + property.getName()
                     + "\" не принадлежит игроку \"" + name + "\"");
@@ -163,11 +171,15 @@ public class Player {
         return group.sellBuildingOnProperty(index, this);
     }
 
+    public void reportProperty(BaseProperty property) {
+        System.out.println("Игрок \"" + name + "\" осматривает: " + property.describe());
+    }
+
     @Override
     public String toString() {
         StringBuilder info = new StringBuilder("Игрок \"" + name + "\" (id " + id
                 + "): баланс " + balance + ", участков " + getPropertyCount());
-        for (Property property : properties) {
+        for (BaseProperty property : properties) {
             if (property.getOwnerId() == id) {
                 info.append(System.lineSeparator()).append("  - ").append(property);
             }
