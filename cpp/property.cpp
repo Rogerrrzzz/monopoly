@@ -2,66 +2,120 @@
 
 #include <array>
 #include <iostream>
+#include <utility>
 
 namespace monopoly
 {
 
     namespace
     {
-
-        // Множитель аренды для каждого уровня застройки (индекс - уровень)
         constexpr std::array<int, Property::MAX_BUILD_LEVEL + 1> RENT_MULTIPLIERS{ 1, 2, 3, 5, 8 };
-
     } // namespace
 
-    Property::Property(std::string_view name, int price, int baseRent)
-        : m_name{ name }
-        , m_price{ price }
-        , m_baseRent{ baseRent }
+    Property::Property()
+        : BaseProperty{}
     {
-        std::cout << "[Property] Создан участок \"" << m_name << "\", цена " << m_price << std::endl;
+        std::cout << "[Property] Конструктор по умолчанию" << std::endl;
+    }
+
+    Property::Property(std::string_view name, int price, int baseRent)
+        : BaseProperty{ name, price, baseRent }
+    {
+        std::cout << "[Property] Конструктор с параметрами: " << GetName() << std::endl;
+    }
+
+    Property::Property(const Property& other)
+        : BaseProperty{ other }
+        , m_buildLevel{ other.m_buildLevel }
+    {
+        std::cout << "[Property] Конструктор копирования: " << GetName() << std::endl;
+    }
+
+    Property::Property(Property&& other) noexcept
+        : BaseProperty{ std::move(other) }
+        , m_buildLevel{ other.m_buildLevel }
+    {
+        other.m_buildLevel = 0;
+        std::cout << "[Property] Конструктор перемещения: " << GetName() << std::endl;
+    }
+
+    Property& Property::operator=(const Property& other)
+    {
+        if (this == &other)
+        {
+            std::cout << "[Property] Самоприсваивание: объект сохранён" << std::endl;
+            return *this;
+        }
+        BaseProperty::operator=(other);
+        m_buildLevel = other.m_buildLevel;
+        std::cout << "[Property] Присваивание копированием" << std::endl;
+        return *this;
+    }
+
+    Property& Property::operator=(Property&& other) noexcept
+    {
+        if (this == &other)
+        {
+            return *this;
+        }
+        BaseProperty::operator=(std::move(other));
+        m_buildLevel = other.m_buildLevel;
+        other.m_buildLevel = 0;
+        std::cout << "[Property] Присваивание перемещением" << std::endl;
+        return *this;
     }
 
     Property::~Property()
     {
-        std::cout << "[Property] Уничтожается участок \"" << m_name << "\"" << std::endl;
+        std::cout << "[Property] Деструктор: " << GetName() << std::endl;
+    }
+
+    int Property::GetBuildLevel() const
+    {
+        return m_buildLevel;
+    }
+
+    int Property::GetBuildCost() const
+    {
+        return GetPrice() / 2;
+    }
+
+    int Property::GetBuildRefund() const
+    {
+        return GetBuildCost() / 2;
     }
 
     int Property::CalcRent() const
     {
-        if (!IsOwned() || m_isMortgaged)
-        {
-            return 0;
-        }
-        return m_baseRent * RENT_MULTIPLIERS[m_buildLevel];
+        return !IsOwned() || IsMortgaged() ? 0 : GetBaseRent() * RENT_MULTIPLIERS[m_buildLevel];
     }
 
-    bool Property::AssignOwner(int playerId)
+    std::string Property::Describe() const
     {
-        if (IsOwned())
-        {
-            std::cout << "[Отказ] Участок \"" << m_name << "\" уже принадлежит игроку " << m_ownerId << std::endl;
-            return false;
-        }
+        // Дополняем реализацию базового класса.
+        return "Участок " + BaseProperty::Describe() + ", уровень застройки " + std::to_string(m_buildLevel);
+    }
 
-        m_ownerId = playerId;
-        return true;
+    std::unique_ptr<BaseProperty> Property::ShallowCopy() const
+    {
+        auto copy = std::make_unique<Property>(GetName(), GetPrice(), GetBaseRent());
+        CopySharedStateTo(*copy);
+        copy->m_buildLevel = m_buildLevel;
+        return copy;
+    }
+
+    std::unique_ptr<BaseProperty> Property::Clone() const
+    {
+        return std::make_unique<Property>(*this);
     }
 
     bool Property::Build()
     {
-        if (m_isMortgaged)
+        if (IsMortgaged() || m_buildLevel >= MAX_BUILD_LEVEL)
         {
-            std::cout << "[Отказ] Нельзя строить на заложенном участке \"" << m_name << "\"" << std::endl;
+            std::cout << "[Отказ] Участок заложен или достигнут предел застройки: " << GetName() << std::endl;
             return false;
         }
-
-        if (m_buildLevel >= MAX_BUILD_LEVEL)
-        {
-            std::cout << "[Отказ] На участке \"" << m_name << "\" уже максимальный уровень застройки" << std::endl;
-            return false;
-        }
-
         ++m_buildLevel;
         return true;
     }
@@ -70,10 +124,9 @@ namespace monopoly
     {
         if (m_buildLevel == 0)
         {
-            std::cout << "[Отказ] На участке \"" << m_name << "\" нет построек" << std::endl;
+            std::cout << "[Отказ] Нет построек: " << GetName() << std::endl;
             return false;
         }
-
         --m_buildLevel;
         return true;
     }
@@ -82,58 +135,16 @@ namespace monopoly
     {
         if (m_buildLevel > 0)
         {
-            std::cout << "[Отказ] Нельзя заложить участок \"" << m_name << "\", пока на нём есть постройки" << std::endl;
+            std::cout << "[Отказ] Нельзя заложить участок с постройкой: " << GetName() << std::endl;
             return false;
         }
-
-        if (m_isMortgaged)
-        {
-            std::cout << "[Отказ] Участок \"" << m_name << "\" уже заложен" << std::endl;
-            return false;
-        }
-
-        m_isMortgaged = true;
-        return true;
-    }
-
-    bool Property::Redeem()
-    {
-        if (!m_isMortgaged)
-        {
-            std::cout << "[Отказ] Участок \"" << m_name << "\" не находится в залоге" << std::endl;
-            return false;
-        }
-
-        m_isMortgaged = false;
-        return true;
+        return BaseProperty::Mortgage();
     }
 
     void Property::ReturnToBank()
     {
-        m_ownerId = BANK_OWNER_ID;
+        BaseProperty::ReturnToBank();
         m_buildLevel = 0;
-        m_isMortgaged = false;
     }
 
-    void Property::PrintInfo() const
-    {
-        std::cout << "Участок \"" << m_name << "\": цена " << m_price << ", ";
-
-        if (IsOwned())
-        {
-            std::cout << "владелец - игрок " << m_ownerId;
-        }
-        else
-        {
-            std::cout << "владелец - банк";
-        }
-
-        std::cout << ", уровень застройки " << m_buildLevel << ", аренда " << CalcRent();
-
-        if (m_isMortgaged)
-        {
-            std::cout << ", в залоге";
-        }
-        std::cout << std::endl;
-    }
 } // namespace monopoly
