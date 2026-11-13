@@ -1,5 +1,5 @@
 // Участок с возможностью строительства
-public class Property extends BaseProperty {
+public class Property extends BaseProperty implements Rentable {
     private static final int MAX_BUILD_LEVEL = 4;
     private static final int[] RENT_MULTIPLIERS = {1, 2, 3, 5, 8};
 
@@ -12,13 +12,13 @@ public class Property extends BaseProperty {
 
     public Property(String name, int price, int baseRent) {
         super(name, price, baseRent);
-        System.out.println("[Property] Конструктор с параметрами: " + getName());
+        System.out.println("[Property] Конструктор с параметрами: " + name);
     }
 
     public Property(Property other) {
         super(other);
         this.buildLevel = other.buildLevel;
-        System.out.println("[Property] Конструктор копирования: " + getName());
+        System.out.println("[Property] Конструктор копирования: " + other.getName());
     }
 
     public int getBuildLevel() {
@@ -35,7 +35,14 @@ public class Property extends BaseProperty {
 
     @Override
     public int calcRent() {
-        return !isOwned() || isMortgaged() ? 0 : getBaseRent() * RENT_MULTIPLIERS[buildLevel];
+        if (!isOwned() || isMortgaged()) {
+            return 0;
+        }
+        int multiplier = RENT_MULTIPLIERS[buildLevel];
+        if (getBaseRent() > Integer.MAX_VALUE / multiplier) {
+            throw new GameRuleException("Сумма аренды участка слишком велика");
+        }
+        return getBaseRent() * multiplier;
     }
 
     @Override
@@ -56,31 +63,29 @@ public class Property extends BaseProperty {
         return new Property(this);
     }
 
-    public boolean build() {
-        if (isMortgaged() || buildLevel >= MAX_BUILD_LEVEL) {
-            System.out.println("[Отказ] Участок заложен или достигнут предел застройки: " + getName());
-            return false;
+    public void build() {
+        if (isMortgaged()) {
+            throw new GameRuleException("Нельзя строить на заложенном участке");
+        }
+        if (buildLevel >= MAX_BUILD_LEVEL) {
+            throw new GameRuleException("Достигнут предел застройки участка");
         }
         buildLevel++;
-        return true;
     }
 
-    public boolean sellBuilding() {
+    public void sellBuilding() {
         if (buildLevel == 0) {
-            System.out.println("[Отказ] Нет построек: " + getName());
-            return false;
+            throw new GameRuleException("На участке нет построек для продажи");
         }
         buildLevel--;
-        return true;
     }
 
     @Override
-    public boolean mortgage() {
+    public void mortgage() {
         if (buildLevel > 0) {
-            System.out.println("[Отказ] Нельзя заложить участок с постройкой: " + getName());
-            return false;
+            throw new GameRuleException("Нельзя заложить участок с постройкой");
         }
-        return super.mortgage();
+        super.mortgage();
     }
 
     @Override

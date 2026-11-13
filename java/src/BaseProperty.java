@@ -1,5 +1,5 @@
 // Общее состояние и поведение недвижимости
-public abstract class BaseProperty {
+public abstract class BaseProperty implements Comparable<BaseProperty> {
     private static final int BANK_OWNER_ID = -1;
     private static int createdCount;
 
@@ -14,7 +14,7 @@ public abstract class BaseProperty {
     protected BaseProperty(String name, int price, int baseRent) {
         this.info = new PropertyInfo(name, price, baseRent);
         createdCount++;
-        System.out.println("[BaseProperty] Конструктор с параметрами: " + getName());
+        System.out.println("[BaseProperty] Конструктор с параметрами: " + info.getName());
     }
 
     // Для глубокой копии создаётся отдельная карточка
@@ -23,7 +23,7 @@ public abstract class BaseProperty {
         this.ownerId = other.ownerId;
         this.mortgaged = other.mortgaged;
         createdCount++;
-        System.out.println("[BaseProperty] Конструктор копирования: " + getName());
+        System.out.println("[BaseProperty] Конструктор копирования: " + info.getName());
     }
 
     protected String header() {
@@ -79,31 +79,28 @@ public abstract class BaseProperty {
         info.setBaseRent(baseRent);
     }
 
-    public boolean assignOwner(int playerId) {
-        if (isOwned() || playerId <= 0) {
-            System.out.println("[Отказ] Недвижимость занята или указан неверный владелец: " + getName());
-            return false;
+    public void assignOwner(int playerId) {
+        if (playerId <= 0) {
+            throw new GameRuleException("Идентификатор владельца должен быть положительным");
+        }
+        if (isOwned()) {
+            throw new GameRuleException("Недвижимость уже принадлежит игроку " + ownerId);
         }
         ownerId = playerId;
-        return true;
     }
 
-    public boolean mortgage() {
+    public void mortgage() {
         if (mortgaged) {
-            System.out.println("[Отказ] Недвижимость уже в залоге: " + getName());
-            return false;
+            throw new GameRuleException("Недвижимость уже находится в залоге");
         }
         mortgaged = true;
-        return true;
     }
 
-    public boolean redeem() {
+    public void redeem() {
         if (!mortgaged) {
-            System.out.println("[Отказ] Недвижимость не находится в залоге: " + getName());
-            return false;
+            throw new GameRuleException("Недвижимость не находится в залоге");
         }
         mortgaged = false;
-        return true;
     }
 
     public void returnToBank() {
@@ -127,6 +124,12 @@ public abstract class BaseProperty {
 
     public static int getCreatedCount() {
         return createdCount;
+    }
+
+    // Естественный порядок недвижимости - по названию
+    @Override
+    public int compareTo(BaseProperty other) {
+        return getName().compareTo(other.getName());
     }
 
     @Override
