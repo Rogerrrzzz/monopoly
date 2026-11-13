@@ -11,7 +11,7 @@ public class Player {
 
     public Player(int id, String name, int balance) {
         if (id < 0 || balance < 0) {
-            throw new IllegalArgumentException("Идентификатор и баланс не могут быть отрицательными");
+            throw new GameRuleException("Идентификатор и баланс не могут быть отрицательными");
         }
         this.id = id;
         this.name = name;
@@ -46,7 +46,7 @@ public class Player {
 
     public void setId(int id) {
         if (id <= 0 || getPropertyCount() > 0) {
-            throw new IllegalArgumentException("Положительный id задаётся до покупки участков");
+            throw new GameRuleException("Положительный id задаётся до покупки участков");
         }
         this.id = id;
     }
@@ -55,48 +55,38 @@ public class Player {
         this.name = name;
     }
 
-    public boolean pay(int amount) {
+    public void pay(int amount) {
         if (amount < 0) {
-            System.out.println("[Отказ] Нельзя заплатить отрицательную сумму");
-            return false;
+            throw new GameRuleException("Нельзя заплатить отрицательную сумму");
         }
         if (amount > balance) {
-            System.out.println("[Отказ] У игрока \"" + name + "\" недостаточно денег: нужно "
+            throw new GameRuleException("У игрока " + name + " недостаточно денег: нужно "
                     + amount + ", есть " + balance);
-            return false;
         }
         balance -= amount;
-        return true;
     }
 
-    public boolean receive(int amount) {
+    public void receive(int amount) {
         if (amount < 0 || amount > Integer.MAX_VALUE - balance) {
-            System.out.println("[Отказ] Недопустимая сумма пополнения баланса");
-            return false;
+            throw new GameRuleException("Недопустимая сумма пополнения баланса");
         }
         balance += amount;
-        return true;
     }
 
-    public boolean buyProperty(BaseProperty property) {
+    public void buyProperty(BaseProperty property) {
         if (property == null) {
-            System.out.println("[Отказ] Участок не указан (null)");
-            return false;
+            throw new GameRuleException("Недвижимость не указана");
         }
         if (id <= 0) {
-            System.out.println("[Отказ] Перед покупкой задайте положительный id игрока");
-            return false;
+            throw new GameRuleException("Перед покупкой задайте положительный id игрока");
         }
         if (property.isOwned()) {
-            System.out.println("[Отказ] Участок \"" + property.getName()
-                    + "\" уже принадлежит игроку " + property.getOwnerId());
-            return false;
+            throw new GameRuleException("Недвижимость " + property.getName()
+                    + " уже принадлежит игроку " + property.getOwnerId());
         }
-        if (!pay(property.getPrice())) {
-            return false;
-        }
+        pay(property.getPrice());
         property.assignOwner(id);
-        // Разные объекты с одинаковыми данными всё равно являются разной недвижимостью
+        // Учитываем именно объект недвижимости, а не равенство его данных
         boolean alreadyStored = false;
         for (BaseProperty stored : properties) {
             if (stored == property) {
@@ -107,68 +97,59 @@ public class Player {
         if (!alreadyStored) {
             properties.add(property);
         }
-        System.out.println("Игрок \"" + name + "\" купил недвижимость \"" + property.getName()
-                + "\" за " + property.getPrice());
-        return true;
+        System.out.println("Игрок " + name + " купил недвижимость " + property.getName()
+                + " за " + property.getPrice());
     }
 
-    public boolean buyProperty(PropertyGroup group, int index) {
-        if (!group.buyProperty(index, this)) {
-            return false;
+    public void buyProperty(PropertyGroup group, int index) {
+        if (group == null) {
+            throw new GameRuleException("Группа не указана");
         }
-        // Сохраняется группа целиком: ссылок на её внутренние участки снаружи нет.
+        group.buyProperty(index, this);
+        // Сохраняется группа целиком: ссылок на её внутренние участки снаружи нет
         if (!propertyGroups.contains(group)) {
             propertyGroups.add(group);
         }
-        return true;
     }
 
-    public boolean mortgageProperty(BaseProperty property) {
+    public void mortgageProperty(BaseProperty property) {
         if (property.getOwnerId() != id) {
-            System.out.println("[Отказ] Участок \"" + property.getName()
-                    + "\" не принадлежит игроку \"" + name + "\"");
-            return false;
+            throw new GameRuleException("Недвижимость не принадлежит игроку " + name);
         }
-        if (property.getMortgageValue() > Integer.MAX_VALUE - balance) {
-            return false;
+        int amount = property.getMortgageValue();
+        if (amount > Integer.MAX_VALUE - balance) {
+            throw new GameRuleException("Залог приведёт к переполнению баланса");
         }
-        if (!property.mortgage()) {
-            return false;
-        }
-        receive(property.getMortgageValue());
-        System.out.println("Игрок \"" + name + "\" заложил участок \"" + property.getName()
-                + "\", получено " + property.getMortgageValue());
-        return true;
+        property.mortgage();
+        receive(amount);
+        System.out.println("Игрок " + name + " заложил недвижимость " + property.getName()
+                + ", получено " + amount);
     }
 
-    public boolean mortgageProperty(PropertyGroup group, int index) {
-        return group.mortgageProperty(index, this);
+    public void mortgageProperty(PropertyGroup group, int index) {
+        group.mortgageProperty(index, this);
     }
 
-    public boolean buildOnProperty(PropertyGroup group, int index) {
-        return group.buildOn(index, this);
+    public void buildOnProperty(PropertyGroup group, int index) {
+        group.buildOn(index, this);
     }
 
-    public boolean sellBuildingOnProperty(Property property) {
+    public void sellBuildingOnProperty(Property property) {
         if (property.getOwnerId() != id) {
-            System.out.println("[Отказ] Участок \"" + property.getName()
-                    + "\" не принадлежит игроку \"" + name + "\"");
-            return false;
+            throw new GameRuleException("Участок не принадлежит игроку " + name);
         }
-        if (property.getBuildRefund() > Integer.MAX_VALUE - balance) {
-            return false;
+        int amount = property.getBuildRefund();
+        if (amount > Integer.MAX_VALUE - balance) {
+            throw new GameRuleException("Продажа постройки приведёт к переполнению баланса");
         }
-        if (!property.sellBuilding()) {
-            return false;
-        }
-        receive(property.getBuildRefund());
-        System.out.println("Игрок \"" + name + "\" продал постройку на участке \""
-                + property.getName() + "\", получено " + property.getBuildRefund());
-        return true;
+        property.sellBuilding();
+        receive(amount);
+        System.out.println("Игрок " + name + " продал постройку на участке " + property.getName()
+                + ", получено " + amount);
     }
 
-    public boolean sellBuildingOnProperty(PropertyGroup group, int index) {
-        return group.sellBuildingOnProperty(index, this);
+    public void sellBuildingOnProperty(PropertyGroup group, int index) {
+        group.sellBuildingOnProperty(index, this);
     }
 
     public void reportProperty(BaseProperty property) {
