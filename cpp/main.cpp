@@ -1,164 +1,81 @@
 ﻿#include "base_property.hpp"
+#include "double_rent_policy.hpp"
+#include "game_rule_error.hpp"
 #include "player.hpp"
 #include "property.hpp"
 #include "property_group.hpp"
 #include "railway_station.hpp"
+#include "rent_calculator.hpp"
+#include "standard_rent_policy.hpp"
 
-#include <array>
+#include <exception>
 #include <iostream>
 #include <memory>
-#include <string>
-#include <utility>
 
 #include <windows.h>
 
 int main()
 {
     SetConsoleOutputCP(1251);
+    std::cout << "ЛР 5. Полиморфизм" << std::endl;
 
-    std::cout << "ЛР 4. Наследование" << std::endl;
-    std::cout << "Создано объектов недвижимости: " << monopoly::BaseProperty::GetCreatedCount() << std::endl;
+    // 1-3. Интерфейс, две реализации и множественное наследование
+    std::cout << "\n1. Интерфейс IRentable и множественное наследование" << std::endl;
+    monopoly::Property street("Арбат", 200, 20);
+    street.AssignOwner(1);
+    street.Build();
+    monopoly::RailwayStation station("Рижский вокзал", 200, 25);
+    station.AssignOwner(1);
+    monopoly::RentCalculator calculator(std::make_unique<monopoly::StandardRentPolicy>());
 
-    // 1. Один базовый тип, разные реализации расчёта аренды и описания
+    const monopoly::IRentable& rentableStreet = street;
+    const monopoly::IRentable& rentableStation = station;
+    std::cout << "Аренда участка через IRentable: " << calculator.Calculate(rentableStreet) << std::endl;
+    std::cout << "Аренда вокзала через IRentable: " << calculator.Calculate(rentableStation) << std::endl;
+
+    // 4. Виртуальный и невиртуальный методы через ссылку на базовый класс
+    std::cout << "\n2. Раннее и позднее связывание" << std::endl;
+    const monopoly::BaseProperty& base = street;
+    std::cout << "Раннее, BaseProperty& -> GetName(): " << base.GetName() << std::endl;
+    std::cout << "Позднее, BaseProperty& -> Describe(): " << base.Describe() << std::endl;
+
+    // 5. Проверка поддержки интерфейса во время выполнения
+    std::cout << "\n3. Проверка типа: dynamic_cast" << std::endl;
+    if (const auto* rentable = dynamic_cast<const monopoly::IRentable*>(&base))
     {
-        std::cout << "\n1. Абстрактный класс и два наследника" << std::endl;
-        auto street = std::make_unique<monopoly::Property>("Арбат", 200, 20);
-        street->AssignOwner(1);
-        street->Build();
-
-        std::array<std::unique_ptr<monopoly::BaseProperty>, 2> properties{
-            std::move(street),
-            std::make_unique<monopoly::RailwayStation>("Рижский вокзал", 200, 25)
-        };
-        properties[1]->AssignOwner(1);
-        for (std::size_t i = 0; i < properties.size(); ++i)
-        {
-            properties[i]->PrintInfo();
-            std::cout << "Аренда через BaseProperty: " << properties[i]->CalcRent() << std::endl;
-        }
-        std::cout << "Выход из блока: для каждого объекта сначала деструктор наследника, затем базы." << std::endl;
+        std::cout << base.GetName() << " поддерживает IRentable, аренда: " << calculator.Calculate(*rentable) << std::endl;
+    }
+    else
+    {
+        std::cout << base.GetName() << " не поддерживает IRentable" << std::endl;
     }
 
-    // 2. Четыре вида конструкторов и согласованные операции присваивания
+    // 6. Смена объекта поведения у существующего калькулятора
+    std::cout << "\n4. Динамическое конфигурирование аренды" << std::endl;
+    std::cout << "Обычная аренда: " << calculator.Calculate(street) << std::endl;
+    calculator.SetPolicy(std::make_unique<monopoly::DoubleRentPolicy>());
+    std::cout << "Двойная аренда: " << calculator.Calculate(street) << std::endl;
+
+    // 7. Успешное действие и перехваченное нарушение правила
+    std::cout << "\n5. Исключения и игровые правила" << std::endl;
+    auto red = std::make_shared<monopoly::PropertyGroup>("Красные", 2);
+    red->AddProperty("Арбат", 200, 20);
+    red->AddProperty("Тверская", 220, 22);
+    monopoly::Player bogdan(1, "Богдан", 1000);
+
+    try
     {
-        std::cout << "\n2. Конструкторы, копирование и перемещение" << std::endl;
-        monopoly::Property empty;
-        monopoly::Property original("Тверская", 220, 22);
-        monopoly::Property copy(original);
-        monopoly::Property moved(std::move(copy));
-        empty = original;
-        empty = empty; // this == &other
-        monopoly::Property assigned;
-        assigned = empty = original; // оператор возвращает *this
-        assigned = std::move(moved);
-        assigned.PrintInfo();
-        copy.PrintInfo(); // перемещённый объект остаётся пригодным для вывода и присваивания
-        copy = original;
-
-        monopoly::RailwayStation emptyStation;
-        monopoly::RailwayStation station("Казанский вокзал", 200, 25);
-        monopoly::RailwayStation stationCopy(station);
-        monopoly::RailwayStation movedStation(std::move(stationCopy));
-        emptyStation = station;
-        emptyStation = std::move(movedStation);
-        emptyStation.PrintInfo();
-        std::cout << "BaseProperty и наследники согласуют все пять специальных операций." << std::endl;
-        std::cout << "PropertyInfo использует правило нуля: своих операций копирования и деструктора нет." << std::endl;
-        std::cout << "Выход из блока: объекты уничтожаются в обратном порядке создания." << std::endl;
-    }
-
-    // 3. Вложенная карточка либо общая, либо независимая
-    {
-        std::cout << "\n3. Поверхностная и глубокая копии" << std::endl;
-        monopoly::Property original("Арбат", 200, 20);
-        original.AssignOwner(1);
-        auto shallow = original.ShallowCopy();
-        shallow->Rename("Арбат: общая карточка");
-        shallow->SetBaseRent(30);
-        std::cout << "После изменения поверхностной копии изменился и оригинал:" << std::endl;
-        original.PrintInfo();
-        shallow->PrintInfo();
-
-        std::unique_ptr<monopoly::BaseProperty> deep = original.Clone();
-        deep->Rename("Арбат: независимая карточка");
-        deep->SetBaseRent(90);
-        std::cout << "После изменения Clone оригинал сохраняет своё имя и аренду 30:" << std::endl;
-        original.PrintInfo();
-        deep->PrintInfo();
-
-        monopoly::Property assigned;
-        assigned = original;
-        assigned.SetBaseRent(70);
-        std::cout << "Присваивание тоже глубокое: аренда оригинала " << original.CalcRent()
-            << ", копии " << assigned.CalcRent() << std::endl;
-
-        // Clone вызывается через базовый указатель и сохраняет тип вокзала
-        std::unique_ptr<monopoly::BaseProperty> station =
-            std::make_unique<monopoly::RailwayStation>("Ленинградский вокзал", 200, 25);
-        auto stationCopy = station->Clone();
-        stationCopy->PrintInfo();
-    }
-
-    // 4. Удаление через базовый тип безопасно благодаря виртуальному деструктору
-    {
-        std::cout << "\n4. Виртуальный деструктор" << std::endl;
-        std::unique_ptr<monopoly::BaseProperty> property =
-            std::make_unique<monopoly::RailwayStation>("Павелецкий вокзал", 200, 25);
-        std::cout << "reset: сначала RailwayStation, затем BaseProperty" << std::endl;
-        property.reset();
-        std::cout << "Без virtual уничтожение наследника через unique_ptr<BaseProperty> - неопределённое поведение."
-            << std::endl;
-    }
-
-    // 5. Операции со строками по теме проекта
-    {
-        std::cout << "\n5. Строки" << std::endl;
-        const std::string name = "Рижский вокзал";
-        const std::string label = "Недвижимость: " + name;
-        std::cout << "Склеивание: " << label << std::endl;
-        const std::string word = "вокзал";
-        const std::size_t position = name.find(word);
-        if (position != std::string::npos)
-        {
-            const std::string part = name.substr(position, word.size());
-            std::cout << "find и substr: " << part << std::endl;
-            std::cout << "Сравнение содержимого: " << (part == word ? "совпало" : "не совпало") << std::endl;
-        }
-    }
-
-    // 6. Передача текущего объекта через *this и статическое поле
-    {
-        std::cout << "\n6. this и статические члены" << std::endl;
-        monopoly::Player viewer(7, "Покупатель", 500);
-        monopoly::RailwayStation station("Рижский вокзал", 200, 25);
-        station.ShowTo(viewer); // внутри: player.ReportProperty(*this)
-        std::cout << "Всего создано объектов, включая копии: " << monopoly::BaseProperty::GetCreatedCount() << std::endl;
-    }
-
-    // 7. Исходный игровой сценарий сохраняется, вокзал теперь имеет свой тип
-    {
-        std::cout << "\n7. Композиция, агрегация и правила игры" << std::endl;
-        auto red = std::make_shared<monopoly::PropertyGroup>("Красные", 2);
-        red->AddProperty("Арбат", 200, 20);
-        red->AddProperty("Тверская", 220, 22);
-        monopoly::Player bogdan(1, "Богдан", 1000);
-        monopoly::Player mark(2, "Марк", 1000);
         bogdan.BuyProperty(red, 0);
-        bogdan.BuildOnProperty(*red, 0); // отказ: ещё нет полной монополии
-        bogdan.BuyProperty(red, 1);
         bogdan.BuildOnProperty(*red, 0);
-        mark.BuyProperty(red, 0); // отказ: участок занят
-        bogdan.MortgageProperty(*red, 0); // отказ: есть постройка
-        bogdan.SellBuildingOnProperty(*red, 0);
-        bogdan.MortgageProperty(*red, 0);
-        bogdan.PrintInfo(); // баланс 630
-
-        auto station = std::make_shared<monopoly::RailwayStation>("Рижский вокзал", 200, 25);
-        mark.BuyProperty(station);
-        mark.PrintInfo();
+    }
+    catch (const monopoly::GameRuleError& error)
+    {
+        std::cout << "[Нарушение правила] " << error.what() << ". Строительство отменено" << std::endl;
+    }
+    catch (const std::exception& error)
+    {
+        std::cout << "[Ошибка действия] " << error.what() << ". Действие отменено" << std::endl;
     }
 
-    std::cout << "\nИтоговый счётчик созданных объектов: " << monopoly::BaseProperty::GetCreatedCount() << std::endl;
-    std::cout << "Счётчик показывает все создания, а не число живых объектов." << std::endl;
     return 0;
 }
