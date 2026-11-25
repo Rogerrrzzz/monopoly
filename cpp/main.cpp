@@ -1,14 +1,12 @@
 ﻿#include "base_property.hpp"
 #include "double_rent_policy.hpp"
-#include "game_rule_error.hpp"
-#include "player.hpp"
+#include "money.hpp"
+#include "percent.hpp"
 #include "property.hpp"
-#include "property_group.hpp"
 #include "railway_station.hpp"
 #include "rent_calculator.hpp"
 #include "standard_rent_policy.hpp"
 
-#include <exception>
 #include <iostream>
 #include <memory>
 
@@ -17,65 +15,60 @@
 int main()
 {
     SetConsoleOutputCP(1251);
-    std::cout << "ЛР 5. Полиморфизм" << std::endl;
+    std::cout << "ЛР 6. Статический полиморфизм" << std::endl;
 
-    // 1-3. Интерфейс, две реализации и множественное наследование
-    std::cout << "\n1. Интерфейс IRentable и множественное наследование" << std::endl;
     monopoly::Property street("Арбат", 200, 20);
     street.AssignOwner(1);
     street.Build();
     monopoly::RailwayStation station("Рижский вокзал", 200, 25);
     station.AssignOwner(1);
-    monopoly::RentCalculator calculator(std::make_unique<monopoly::StandardRentPolicy>());
+    monopoly::RentCalculator<monopoly::Property> streetCalculator(
+        std::make_unique<monopoly::StandardRentPolicy>());
+    monopoly::RentCalculator<monopoly::RailwayStation> stationCalculator(
+        std::make_unique<monopoly::StandardRentPolicy>());
 
-    const monopoly::IRentable& rentableStreet = street;
-    const monopoly::IRentable& rentableStation = station;
-    std::cout << "Аренда участка через IRentable: " << calculator.Calculate(rentableStreet) << std::endl;
-    std::cout << "Аренда вокзала через IRentable: " << calculator.Calculate(rentableStation) << std::endl;
+    // 1. Одно имя метода для расчёта с обычным или разовым правилом
+    std::cout << "\n1. Перегрузка Calculate" << std::endl;
+    const monopoly::DoubleRentPolicy doublePolicy;
+    std::cout << "Аренда Арбата по текущему правилу: " << streetCalculator.Calculate(street) << std::endl;
+    std::cout << "Аренда Арбата по разовому правилу: "
+              << streetCalculator.Calculate(street, doublePolicy) << std::endl;
 
-    // 4. Виртуальный и невиртуальный методы через ссылку на базовый класс
-    std::cout << "\n2. Раннее и позднее связывание" << std::endl;
-    const monopoly::BaseProperty& base = street;
-    std::cout << "Раннее, BaseProperty& -> GetName(): " << base.GetName() << std::endl;
-    std::cout << "Позднее, BaseProperty& -> Describe(): " << base.Describe() << std::endl;
+    // 2. Сложение и сравнение денежных сумм
+    std::cout << "\n2. Операторы класса Money" << std::endl;
+    const monopoly::Money streetPrice{ street.GetPrice() };
+    const monopoly::Money tverskayaPrice{ 220 };
+    const monopoly::Money totalPrice = streetPrice + tverskayaPrice;
+    std::cout << streetPrice << " + " << tverskayaPrice << " = " << totalPrice << std::endl;
 
-    // 5. Проверка поддержки интерфейса во время выполнения
-    std::cout << "\n3. Проверка типа: dynamic_cast" << std::endl;
-    if (const auto* rentable = dynamic_cast<const monopoly::IRentable*>(&base))
-    {
-        std::cout << base.GetName() << " поддерживает IRentable, аренда: " << calculator.Calculate(*rentable) << std::endl;
-    }
-    else
-    {
-        std::cout << base.GetName() << " не поддерживает IRentable" << std::endl;
-    }
+    monopoly::Money purchaseCost{ streetPrice };
+    purchaseCost += tverskayaPrice;
+    std::cout << "Сумма после +=: " << purchaseCost << std::endl;
+    std::cout << std::boolalpha;
+    std::cout << "Суммы получились равными: " << (purchaseCost == totalPrice) << std::endl;
+    std::cout << "Арбат дешевле Тверской: " << (streetPrice < tverskayaPrice) << std::endl;
 
-    // 6. Смена объекта поведения у существующего калькулятора
-    std::cout << "\n4. Динамическое конфигурирование аренды" << std::endl;
-    std::cout << "Обычная аренда: " << calculator.Calculate(street) << std::endl;
-    calculator.SetPolicy(std::make_unique<monopoly::DoubleRentPolicy>());
-    std::cout << "Двойная аренда: " << calculator.Calculate(street) << std::endl;
+    // 3. Дружественный вывод денег и вывод недвижимости через базовую ссылку
+    std::cout << "\n3. Вывод через operator<<" << std::endl;
+    std::cout << "Денежная сумма: " << totalPrice << std::endl;
+    const monopoly::BaseProperty& streetBase = street;
+    const monopoly::BaseProperty& stationBase = station;
+    std::cout << streetBase << std::endl;
+    std::cout << stationBase << std::endl;
 
-    // 7. Успешное действие и перехваченное нарушение правила
-    std::cout << "\n5. Исключения и игровые правила" << std::endl;
-    auto red = std::make_shared<monopoly::PropertyGroup>("Красные", 2);
-    red->AddProperty("Арбат", 200, 20);
-    red->AddProperty("Тверская", 220, 22);
-    monopoly::Player bogdan(1, "Богдан", 1000);
+    // 4. Шаблонная функция для целых и дробных чисел
+    std::cout << "\n4. Шаблон Percent" << std::endl;
+    std::cout << "Доля цены Арбата от бюджета 1000: "
+              << monopoly::Percent(street.GetPrice(), 1000) << "%" << std::endl;
+    std::cout << "Доля аренды вокзала от его цены: "
+              << monopoly::Percent<double>(stationCalculator.Calculate(station), station.GetPrice()) << "%" << std::endl;
+    // std::cout << monopoly::Percent("200", "1000") << std::endl; - здесь строки не удовлетворяют концепту Numeric
 
-    try
-    {
-        bogdan.BuyProperty(red, 0);
-        bogdan.BuildOnProperty(*red, 0);
-    }
-    catch (const monopoly::GameRuleError& error)
-    {
-        std::cout << "[Нарушение правила] " << error.what() << ". Строительство отменено" << std::endl;
-    }
-    catch (const std::exception& error)
-    {
-        std::cout << "[Ошибка действия] " << error.what() << ". Действие отменено" << std::endl;
-    }
+    // 5. Два типа калькулятора и общий расчёт аренды участка и вокзала
+    std::cout << "\n5. Шаблонный RentCalculator" << std::endl;
+    std::cout << "Аренда участка: " << streetCalculator.Calculate(street) << std::endl;
+    std::cout << "Аренда вокзала: " << stationCalculator.Calculate(station) << std::endl;
+    std::cout << "Общая аренда: " << streetCalculator.CalculateTotal(street, station) << std::endl;
 
     return 0;
 }

@@ -199,7 +199,7 @@ void BaseProperty::CopySharedStateTo(BaseProperty& target) const
 
 void BaseProperty::PrintInfo() const
 {
-    std::cout << Describe() << std::endl;
+    std::cout << *this << std::endl;
 }
 
 void BaseProperty::ShowTo(const Player& player) const
@@ -210,6 +210,11 @@ void BaseProperty::ShowTo(const Player& player) const
 int BaseProperty::GetCreatedCount()
 {
     return m_createdCount;
+}
+
+std::ostream& operator<<(std::ostream& out, const BaseProperty& property)
+{
+    return out << property.Describe();
 }
 
 } // namespace monopoly

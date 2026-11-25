@@ -2,6 +2,7 @@
 
 #include "property_info.hpp"
 
+#include <iosfwd>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -60,5 +61,7 @@ public:
     void ShowTo(const Player& player) const;
     [[nodiscard]] static int GetCreatedCount();
 };
+
+std::ostream& operator<<(std::ostream& out, const BaseProperty& property);
 
 } // namespace monopoly
