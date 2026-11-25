@@ -9,7 +9,7 @@ public class PropertyGroup {
 
     public PropertyGroup(String name, int capacity) {
         if (capacity < 0) {
-            throw new IllegalArgumentException("Вместимость группы не может быть отрицательной");
+            throw new GameRuleException("Вместимость группы не может быть отрицательной");
         }
         this.name = name;
         this.capacity = capacity;
@@ -21,7 +21,7 @@ public class PropertyGroup {
     public PropertyGroup(String name, String[] names, int[] prices, int[] baseRents) {
         this(name, names.length);
         if (prices.length != names.length || baseRents.length != names.length) {
-            throw new IllegalArgumentException("Для каждого участка нужны название, цена и аренда");
+            throw new GameRuleException("Для каждого участка нужны название, цена и аренда");
         }
         for (int i = 0; i < names.length; i++) {
             properties.add(new Property(names[i], prices[i], baseRents[i]));
@@ -40,28 +40,23 @@ public class PropertyGroup {
         return capacity;
     }
 
-    public boolean addProperty(String name, int price, int baseRent) {
+    public void addProperty(String name, int price, int baseRent) {
         if (properties.size() >= capacity) {
-            System.out.println("[Отказ] Группа \"" + this.name + "\" уже заполнена, участок \""
-                    + name + "\" не добавлен");
-            return false;
+            throw new GameRuleException("Группа " + this.name + " уже заполнена");
         }
         properties.add(new Property(name, price, baseRent));
-        return true;
     }
 
     // Метод доступа к части закрыт: даже неизменяемый список ссылок нарушил бы композицию.
     private Property getProperty(int index) {
         if (index < 0 || index >= properties.size()) {
-            System.out.println("[Отказ] В группе \"" + name + "\" нет участка с номером " + index);
-            return null;
+            throw new GameRuleException("В группе " + name + " нет участка с номером " + index);
         }
         return properties.get(index);
     }
 
     public String getPropertyInfo(int index) {
-        Property property = getProperty(index);
-        return property == null ? "Участок не найден" : property.toString();
+        return getProperty(index).toString();
     }
 
     public int getOwnedPropertyCount(int playerId) {
@@ -79,98 +74,50 @@ public class PropertyGroup {
                 && getOwnedPropertyCount(playerId) == capacity;
     }
 
-    boolean buyProperty(int index, Player player) {
+    void buyProperty(int index, Player player) {
         Property property = getProperty(index);
-        if (property == null) {
-            return false;
-        }
         if (player.getId() <= 0) {
-            System.out.println("[Отказ] Перед покупкой задайте положительный id игрока");
-            return false;
+            throw new GameRuleException("Перед покупкой задайте положительный id игрока");
         }
         if (property.isOwned()) {
-            System.out.println("[Отказ] Участок \"" + property.getName()
-                    + "\" уже принадлежит игроку " + property.getOwnerId());
-            return false;
+            throw new GameRuleException("Участок " + property.getName()
+                    + " уже принадлежит игроку " + property.getOwnerId());
         }
-        if (!player.pay(property.getPrice())) {
-            return false;
-        }
+        player.pay(property.getPrice());
         property.assignOwner(player.getId());
-        System.out.println("Игрок \"" + player.getName() + "\" купил участок \""
-                + property.getName() + "\" за " + property.getPrice());
-        return true;
+        System.out.println("Игрок " + player.getName() + " купил участок " + property.getName()
+                + " за " + property.getPrice());
     }
 
-    public boolean buildOn(int index, Player player) {
+    public void buildOn(int index, Player player) {
         Property property = getProperty(index);
-        if (property == null) {
-            return false;
+        checkOwner(property, player);
+        if (!isFullyOwnedBy(player.getId())) {
+            throw new GameRuleException("Для строительства нужно владеть всей группой " + name);
         }
         int cost = property.getBuildCost();
         if (player.getBalance() < cost) {
-            System.out.println("[Отказ] У игрока \"" + player.getName()
-                    + "\" не хватает денег на постройку: нужно " + cost + ", есть " + player.getBalance());
-            return false;
+            throw new GameRuleException("Недостаточно денег на постройку: нужно " + cost
+                    + ", есть " + player.getBalance());
         }
-        if (!belongsTo(property, player)) {
-            return false;
-        }
-        if (!isFullyOwnedBy(player.getId())) {
-            System.out.println("[Отказ] Игрок " + player.getId() + " не владеет всей группой \""
-                    + name + "\", застройка запрещена");
-            return false;
-        }
-        if (!property.build()) {
-            return false;
-        }
+        property.build();
         player.pay(cost);
-        System.out.println("Игрок \"" + player.getName() + "\" построил на участке \""
-                + property.getName() + "\" за " + cost);
-        return true;
+        System.out.println("Игрок " + player.getName() + " построил на участке " + property.getName()
+                + " за " + cost);
     }
 
-    boolean mortgageProperty(int index, Player player) {
-        Property property = getProperty(index);
-        if (property == null || !belongsTo(property, player)) {
-            return false;
-        }
-        if (property.getMortgageValue() > Integer.MAX_VALUE - player.getBalance()) {
-            return false;
-        }
-        if (!property.mortgage()) {
-            return false;
-        }
-        player.receive(property.getMortgageValue());
-        System.out.println("Игрок \"" + player.getName() + "\" заложил участок \""
-                + property.getName() + "\", получено " + property.getMortgageValue());
-        return true;
+    void mortgageProperty(int index, Player player) {
+        player.mortgageProperty(getProperty(index));
     }
 
-    boolean sellBuildingOnProperty(int index, Player player) {
-        Property property = getProperty(index);
-        if (property == null || !belongsTo(property, player)) {
-            return false;
-        }
-        if (property.getBuildRefund() > Integer.MAX_VALUE - player.getBalance()) {
-            return false;
-        }
-        if (!property.sellBuilding()) {
-            return false;
-        }
-        player.receive(property.getBuildRefund());
-        System.out.println("Игрок \"" + player.getName() + "\" продал постройку на участке \""
-                + property.getName() + "\", получено " + property.getBuildRefund());
-        return true;
+    void sellBuildingOnProperty(int index, Player player) {
+        player.sellBuildingOnProperty(getProperty(index));
     }
 
-    private boolean belongsTo(Property property, Player player) {
+    private void checkOwner(Property property, Player player) {
         if (property.getOwnerId() != player.getId()) {
-            System.out.println("[Отказ] Участок \"" + property.getName()
-                    + "\" не принадлежит игроку \"" + player.getName() + "\"");
-            return false;
+            throw new GameRuleException("Участок не принадлежит игроку " + player.getName());
         }
-        return true;
     }
 
     String describeOwnedProperties(int playerId) {

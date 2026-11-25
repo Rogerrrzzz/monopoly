@@ -1,5 +1,5 @@
 // Конечный тип недвижимости без строительства
-public final class RailwayStation extends BaseProperty {
+public final class RailwayStation extends BaseProperty implements Rentable {
     public RailwayStation() {
         super();
         System.out.println("[RailwayStation] Конструктор по умолчанию");

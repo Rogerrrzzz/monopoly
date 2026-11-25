@@ -6,7 +6,7 @@ public class PropertyInfo {
 
     public PropertyInfo(String name, int price, int baseRent) {
         if (price < 0 || baseRent < 0) {
-            throw new IllegalArgumentException("Цена и базовая аренда не могут быть отрицательными");
+            throw new GameRuleException("Цена и базовая аренда не могут быть отрицательными");
         }
         this.name = name;
         this.price = price;
@@ -35,7 +35,7 @@ public class PropertyInfo {
 
     public void setBaseRent(int baseRent) {
         if (baseRent < 0) {
-            throw new IllegalArgumentException("Базовая аренда не может быть отрицательной");
+            throw new GameRuleException("Базовая аренда не может быть отрицательной");
         }
         this.baseRent = baseRent;
     }
