@@ -1,69 +1,45 @@
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Arrays;
-
 public class Main {
     public static void main(String[] args) {
-        System.out.println("ЛР 5. Полиморфизм Java");
+        System.out.println("ЛР 6. Статический полиморфизм Java");
 
-        // 1-3. Наследование базового класса и реализация интерфейса
-        System.out.println("\n1. Интерфейс Rentable");
         Property street = new Property("Арбат", 200, 20);
         street.assignOwner(1);
         street.build();
         RailwayStation station = new RailwayStation("Рижский вокзал", 200, 25);
         station.assignOwner(1);
-        RentCalculator calculator = new RentCalculator(new StandardRentPolicy());
+        RentCalculator<Property> streetCalculator = new RentCalculator<>(new StandardRentPolicy());
+        RentCalculator<RailwayStation> stationCalculator = new RentCalculator<>(new StandardRentPolicy());
 
-        Rentable rentableStreet = street;
-        Rentable rentableStation = station;
-        System.out.println("Аренда участка через Rentable: " + calculator.calculate(rentableStreet));
-        System.out.println("Аренда вокзала через Rentable: " + calculator.calculate(rentableStation));
+        // 1. Перегрузка методов и доступ в пределах пакета
+        System.out.println("\n1. Перегрузка calculate и доступ из того же пакета");
+        System.out.println("Аренда Арбата по текущему правилу: " + streetCalculator.calculate(street));
+        System.out.println("Аренда Арбата по разовому правилу: " + streetCalculator.calculate(street, new DoubleRentPolicy()));
 
-        // 4. Статический метод выбирается заранее, describe - по фактическому типу объекта
-        System.out.println("\n2. Раннее и позднее связывание");
-        BaseProperty base = street;
-        System.out.println("Раннее, static BaseProperty.getCreatedCount(): " + BaseProperty.getCreatedCount());
-        System.out.println("Позднее, BaseProperty -> describe(): " + base.describe());
+        // 2. Методы вместо арифметических операторов
+        System.out.println("\n2. Денежные операции plus и times");
+        Money streetPrice = new Money(street.getPrice());
+        Money tverskayaPrice = new Money(220);
+        System.out.println(streetPrice + " + " + tverskayaPrice + " = " + streetPrice.plus(tverskayaPrice));
+        Money streetRent = new Money(streetCalculator.calculate(street));
+        System.out.println("Два платежа по аренде Арбата: " + streetRent.times(2));
 
-        // 5. Проверка поддержки интерфейса во время выполнения
-        System.out.println("\n3. Проверка типа: instanceof");
-        if (base instanceof Rentable rentable) {
-            System.out.println(base.getName() + " поддерживает Rentable, аренда: " + calculator.calculate(rentable));
-        } else {
-            System.out.println(base.getName() + " не поддерживает Rentable");
+        // 3. Обобщённый метод с ограничением Number
+        System.out.println("\n3. Обобщённый метод percent");
+        System.out.println("Доля цены Арбата от бюджета 1000: " + percent(street.getPrice(), 1000) + "%");
+        System.out.println("Доля аренды вокзала от его цены: " + percent((stationCalculator.calculate(station)), station.getPrice()) + "%");
+
+        // 4. Калькуляторы для двух типов недвижимости и обобщённый метод внутри класса
+        System.out.println("\n4. Обобщённый класс RentCalculator");
+        System.out.println("Аренда участка: " + streetCalculator.calculate(street));
+        System.out.println("Аренда вокзала: " + stationCalculator.calculate(station));
+        System.out.println("Общая аренда: " + streetCalculator.calculateTotal(street, station));
+    }
+
+    private static <T extends Number> double percent(T part, T whole) {
+        double total = whole.doubleValue();
+        if (total == 0.0) {
+            throw new IllegalArgumentException("Нельзя вычислить процент от нуля");
         }
-
-        // 6. Смена объекта поведения у существующего калькулятора
-        System.out.println("\n4. Динамическое конфигурирование аренды");
-        System.out.println("Обычная аренда: " + calculator.calculate(street));
-        calculator.setPolicy(new DoubleRentPolicy());
-        System.out.println("Двойная аренда: " + calculator.calculate(street));
-
-        // Стандартный интерфейс Java: сортировка недвижимости по названию
-        System.out.println("\n5. Comparable: порядок по названию");
-        BaseProperty[] properties = {station, street};
-        Arrays.sort(properties);
-        for (BaseProperty property : properties) {
-            System.out.println(property.getName());
-        }
-
-        // 7. Успешная покупка, нарушение правила и закрытие файла при любом исходе
-        System.out.println("\n6. Исключения и try-with-resources");
-        PropertyGroup red = new PropertyGroup("Красные", 2);
-        red.addProperty("Арбат", 200, 20);
-        red.addProperty("Тверская", 220, 22);
-        Player bogdan = new Player(1, "Богдан", 1000);
-
-        try (GameLog log = new GameLog(Path.of("game.log"))) {
-            bogdan.buyProperty(red, 0);
-            log.write("Игрок Богдан купил участок Арбат");
-            log.write("Попытка построить на Арбате");
-            bogdan.buildOnProperty(red, 0);
-        } catch (GameRuleException error) {
-            System.out.println("[Нарушение правила] " + error.getMessage() + ". Строительство отменено");
-        } catch (IOException error) {
-            System.out.println("[Ошибка журнала] " + error.getMessage());
-        }
+        return (part.doubleValue() / total) * 100.0;
     }
 }
